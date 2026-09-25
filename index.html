@@ -1293,17 +1293,21 @@
       ]
     };
 
-    const mapSearchUrl = (query) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+    const mapSearchUrl = (query) => `https://uri.amap.com/search?keyword=${encodeURIComponent(query)}&city=${encodeURIComponent("青岛")}&view=map&callnative=1`;
+
+    // Migrate fixed location links in the handbook to Gaode as well.
+    document.querySelectorAll('a[href*="google.com/maps"], a[href*="amap.com/search"]').forEach((anchor) => {
+      const oldUrl = new URL(anchor.href);
+      const isRoute = oldUrl.pathname.includes("/dir/");
+      const location = oldUrl.searchParams.get("keyword") || oldUrl.searchParams.get("query") || oldUrl.searchParams.get("destination") || anchor.textContent.replace(/↗/g, "").trim();
+      anchor.href = mapSearchUrl(location);
+      if (isRoute) anchor.textContent = `高德地图搜索终点：${location} ↗`;
+    });
 
     function routeUrl(stops, travelMode = "walking") {
       const clean = stops.filter(Boolean);
-      if (clean.length < 2) return mapSearchUrl(clean[0] || "青岛");
-      const origin = clean[0];
-      const destination = clean[clean.length - 1];
-      const waypoints = clean.slice(1, -1);
-      const params = new URLSearchParams({ api: "1", origin, destination, travelmode: travelMode });
-      if (waypoints.length) params.set("waypoints", waypoints.join("|"));
-      return `https://www.google.com/maps/dir/?${params.toString()}`;
+      const destination = clean[clean.length - 1] || "青岛";
+      return mapSearchUrl(destination);
     }
 
     function escapeHtml(text) {
@@ -1336,7 +1340,7 @@
               <h3>${escapeHtml(day.title)}</h3>
               <p class="day-subtitle">${escapeHtml(day.subtitle)}</p>
             </div>
-            <a class="route-button" href="${routeUrl(day.stops, day.travelMode)}" target="_blank" rel="noopener noreferrer" aria-label="在 Google 地图打开第 ${day.number} 天全天路线">一键打开全天导航 ↗</a>
+            <a class="route-button" href="${routeUrl(day.stops, day.travelMode)}" target="_blank" rel="noopener noreferrer" aria-label="在高德地图打开第 ${day.number} 天终点定位">高德地图打开当日终点 ↗</a>
           </div>
 
           <details class="day-map">
